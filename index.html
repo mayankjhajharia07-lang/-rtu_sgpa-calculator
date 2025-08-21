@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RTU SGPA Calculator – Sem 1 & 2</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f4f8;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .container {
+      background: #fff;
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    label, select, button {
+      font-size: 16px;
+    }
+    select, button {
+      padding: 8px 12px;
+      margin-top: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #e2e8f0;
+    }
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    .result, .credits {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      color: #1f2937;
+    }
+  </style>
+</head>
+<body>
+  <h1>RTU SGPA Calculator — Semesters I & II</h1>
+  <div class="container">
+    <label for="semester">Choose Semester:</label>
+    <select id="semester" onchange="loadSubjects()">
+      <option value="">-- Select Semester --</option>
+      <option value="1">Semester I</option>
+      <option value="2">Semester II</option>
+    </select>
+
+    <div id="subjectTable"></div>
+    <div class="credits" id="totalCredits"></div>
+    <button onclick="calculateSGPA()">Calculate SGPA</button>
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    const semesterData = {
+      "1": [
+        { name: "Engineering Mathematics-I", credits: 4 },
+        { name: "Engineering Chemistry", credits: 4 },
+        { name: "Human Values", credits: 2 },
+        { name: "Programming for Problem Solving", credits: 2 },
+        { name: "Basic Civil Engineering", credits: 2 },
+        { name: "Engineering Chemistry Lab", credits: 1 },
+        { name: "Human Values Activities", credits: 1 },
+        { name: "Computer Programming Lab", credits: 1.5 },
+        { name: "Basic Civil Engineering Lab", credits: 1 },
+        { name: "Computer Aided Engineering Graphics", credits: 1.5 },
+        { name: "Sports", credits: 0.5 }
+      ],
+      "2": [
+        { name: "Engineering Mathematics-II", credits: 4 },
+        { name: "Engineering Physics", credits: 4 },
+        { name: "Communication Skills", credits: 2 },
+        { name: "Basic Mechanical Engineering", credits: 2 },
+        { name: "Basic Electrical Engineering", credits: 2 },
+        { name: "Engineering Physics Lab", credits: 1 },
+        { name: "Language Lab", credits: 1 },
+        { name: "Manufacturing Practices Workshop", credits: 1.5 },
+        { name: "Basic Electrical Engineering Lab", credits: 1 },
+        { name: "Computer Aided Machine Drawing", credits: 1.5 },
+        { name: "DECA (Development & Resource Centre Activities)", credits: 0.5 }
+      ]
+    };
+
+    const gradePoints = {
+      "A++": 10,
+      "A+": 10,
+      "A": 9,
+      "A-": 8.5,
+      "B+": 8,
+      "B": 7.5,
+      "C+": 7,
+      "C": 6.5,
+      "D+": 6,
+      "D": 5.5,
+      "E+": 5,
+      "E": 4,
+      "F": 0
+    };
+
+    function loadSubjects() {
+      const sem = document.getElementById("semester").value;
+      const container = document.getElementById("subjectTable");
+      const creditBox = document.getElementById("totalCredits");
+      container.innerHTML = "";
+      creditBox.innerHTML = "";
+
+      if (!sem) return;
+
+      const subjects = semesterData[sem];
+      let table = `
+        <table>
+          <thead><tr><th>Subject</th><th>Credits</th><th>Grade</th></tr></thead><tbody>`;
+      subjects.forEach((subj) => {
+        table += `
+          <tr>
+            <td>${subj.name}</td>
+            <td>${subj.credits}</td>
+            <td>
+              <select>
+                ${Object.keys(gradePoints)
+                  .map(g => `<option value="${g}">${g}</option>`)
+                  .join("")}
+              </select>
+            </td>
+          </tr>`;
+      });
+      table += "</tbody></table>";
+      container.innerHTML = table;
+
+      let totalDisplayed = subjects.reduce((sum, s) => sum + s.credits, 0);
+      creditBox.innerHTML = `Total Credits: ${totalDisplayed}`;
+    }
+
+    function calculateSGPA() {
+      const sem = document.getElementById("semester").value;
+      if (!sem) {
+        alert("Please select a semester.");
+        return;
+      }
+
+      const subjects = semesterData[sem];
+      const rows = document.querySelectorAll("#subjectTable tbody tr");
+
+      let totalCredits = 0;
+      let weightedSum = 0;
+
+      rows.forEach((row, idx) => {
+        const sub = subjects[idx];
+        const gradeLetter = row.cells[2].querySelector("select").value;
+        const grade = gradePoints[gradeLetter];
+
+        totalCredits += sub.credits;
+        weightedSum += sub.credits * grade;
+      });
+
+      let sgpa = weightedSum / totalCredits;
+
+      // ✅ Special rule: +0.15 boost if A+ in Computer Programming Lab (Sem 1)
+      rows.forEach((row, idx) => {
+        const sub = subjects[idx];
+        const gradeLetter = row.cells[2].querySelector("select").value;
+        if (sem === "1" && sub.name === "Computer Programming Lab" && gradeLetter === "A+") {
+          sgpa += 0.15;
+        }
+      });
+
+      document.getElementById("result").innerText = `Your SGPA is: ${sgpa.toFixed(2)}`;
+    }
+  </script>
+</body>
+</html>
+
